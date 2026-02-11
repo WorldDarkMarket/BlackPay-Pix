@@ -4,10 +4,11 @@ const path = require('path');
 
 // CONFIGURAÇÃO DOS CLIENTES (Adicione novos domínios aqui)
 const CLIENTS = {
-    'pix.codex.art': {
-        name: 'Codex Art',
-        ci: process.env.CI_CODEX, // Definir na Vercel
-        cs: process.env.CS_CODEX, // Definir na Vercel
+    // Substituímos o pix.codex.art por este:
+    'checkout.nextrustx.com': {
+        name: 'NexTrustX',
+        ci: process.env.CI_NEXTRUSTX, // Lembre-se de mudar o nome da variável na Vercel também
+        cs: process.env.CS_NEXTRUSTX,
         logo: 'https://res.cloudinary.com/dhwqfkhzm/image/upload/v1762957978/Captura_de_tela_2025-11-11_141146_bvmsf6.png',
         color: '#00875F'
     },
