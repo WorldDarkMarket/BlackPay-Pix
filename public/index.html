@@ -3,199 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pagamento PIX - Rápido e Seguro</title>
+    <title>Pagamento Seguro - PIX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Reset básico e Box Sizing */
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
+        :root {
+            --primary-color: #00875F; /* Esta cor será substituída pelo servidor */
+            --bg-color: #eef2ff;
         }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #eef2ff;
+            background-color: var(--bg-color);
             margin: 0;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
+            align-items: center;
             min-height: 100vh;
-            padding: 20px 10px;
-        }
-        
-        @media (min-height: 600px) {
-            body { align-items: center; }
+            padding: 20px;
         }
 
         .pix-container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            background: #fff;
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
             text-align: center;
             width: 100%;
-            max-width: 420px;
-            margin: auto;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            max-width: 450px;
+            position: relative;
         }
 
         .pix-logo {
-            width: 100px;
-            height: auto;
-            margin-bottom: 24px;
+            max-width: 120px;
+            max-height: 50px;
+            margin-bottom: 30px;
             object-fit: contain;
         }
 
-        h1 {
-            font-size: 26px;
-            color: #1f2937;
-            margin: 0 0 4px 0;
-            font-weight: 700;
+        h1 { font-size: 22px; color: #1f2937; margin-bottom: 8px; font-weight: 700; }
+        
+        .timer {
+            font-size: 13px;
+            color: #ef4444;
+            background: #fee2e2;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            font-weight: 600;
         }
 
         .price {
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 800;
-            color: #00875F; /* O servidor substituirá esta cor se necessário */
-            margin-bottom: 24px;
+            color: var(--primary-color);
+            margin-bottom: 25px;
+        }
+
+        .qrcode-wrapper {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 15px;
+            display: inline-block;
+            border: 2px solid #f1f5f9;
+            margin-bottom: 25px;
         }
 
         .qrcode {
-            width: 250px;
-            height: 250px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            border: 5px solid #e2e8f0;
-            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            width: 220px;
+            height: 220px;
+            display: block;
         }
 
-        .qrcode:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 15px rgba(0, 135, 95, 0.2);
-        }
-
-        .code-block-wrapper {
-            text-align: left;
-            margin-bottom: 16px;
-        }
+        .code-block-wrapper { text-align: left; margin-bottom: 20px; }
 
         .info-label {
-            font-size: 14px;
-            color: #475569;
+            font-size: 13px;
+            color: #64748b;
             margin-bottom: 8px;
             font-weight: 600;
-            display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .pix-code-display {
             width: 100%;
-            padding: 12px;
+            padding: 15px;
             font-size: 13px;
-            border-radius: 8px;
-            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            border: 2px dashed #cbd5e1;
             background-color: #f8fafc;
             word-break: break-all;
-            text-align: left;
-            overflow-x: auto;
-            line-height: 1.4;
             color: #334155;
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
             cursor: pointer;
-            user-select: all;
+            transition: all 0.2s;
         }
+
+        .pix-code-display:hover { border-color: var(--primary-color); background: #f0fdf4; }
 
         .copy-button {
             width: 100%;
-            padding: 14px;
+            padding: 16px;
             font-size: 16px;
             border: none;
-            border-radius: 8px;
-            background-color: #00875F; /* Cor principal de ação */
+            border-radius: 12px;
+            background-color: var(--primary-color);
             color: #ffffff;
             cursor: pointer;
-            font-weight: 600;
-            transition: background-color 0.3s, transform 0.1s;
-            margin-bottom: 16px;
+            font-weight: 700;
+            transition: transform 0.2s, filter 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 135, 95, 0.2);
         }
 
-        .copy-button:hover {
-            filter: brightness(0.9);
-            transform: translateY(-1px);
-        }
-        
-        .copy-button:active { transform: translateY(0); }
-
+        .copy-button:active { transform: scale(0.98); }
         .copy-button.copied { background-color: #10b981 !important; }
 
         .footer {
-            margin-top: 8px;
-            font-size: 12px;
-            color: #64748b;
-            font-weight: 500;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #f1f5f9;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .footer span {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        
-        .footer-share-link {
-            border: 1px solid #cbd5e1;
-            background-color: #f8fafc;
-            color: #334155;
-            font-size: 11px;
-            padding: 4px 8px; 
-            border-radius: 4px;
-            cursor: pointer;
+        .secure-tag { font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 5px; }
+
+        .btn-share {
+            background: none;
+            border: 1px solid #e2e8f0;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
             font-weight: 600;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            text-decoration: none;
-            white-space: nowrap;
-        }
-        
-        .footer-share-link:hover {
-            background-color: #e2e8f0;
-            border-color: #94a3b8;
-        }
-        
-        .footer-share-link.copied {
-            background-color: #10b981;
-            color: #ffffff;
-            border-color: #10b981;
+            color: #475569;
+            cursor: pointer;
         }
 
-        @media (max-width: 360px) {
-            .pix-container { padding: 20px; }
-            .qrcode { width: 200px; height: 200px; }
-        }
+        /* Skeleton loader para quando estiver carregando */
+        .loading { filter: blur(4px); pointer-events: none; }
     </style>
 </head>
 <body>
-    <div class="pix-container">
-        <img class="pix-logo" 
-             src="https://res.cloudinary.com/dhwqfkhzm/image/upload/v1762957978/Captura_de_tela_2025-11-11_141146_bvmsf6.png" 
-             alt="Logo Empresa">
+    <div class="pix-container" id="mainContainer">
+        <img class="pix-logo" id="clientLogo" src="https://res.cloudinary.com/dhwqfkhzm/image/upload/v1762957978/Captura_de_tela_2025-11-11_141146_bvmsf6.png" alt="Logo">
         
-        <h1>Aguardando Pagamento</h1>
+        <h1>Finalize seu Pix</h1>
+        <div class="timer">⚡ Expira em 29:59</div>
         
-        <div class="price" id="valorDisplay">R$ {{ valor }}</div>
+        <div class="price">R$ {{ valor }}</div>
         
-        <img class="qrcode" src="/static/qrcode_{{ valor }}.png" alt="QR Code PIX">
+        <div class="qrcode-wrapper">
+            <img class="qrcode" src="/static/qrcode_{{ valor }}.png" alt="QR Code">
+        </div>
 
         <div class="code-block-wrapper">
-            <label for="pixCodeDisplay" class="info-label">Código Copia e Cola</label>
-            <div id="pixCodeDisplay" class="pix-code-display">{{ code }}</div>
+            <label class="info-label">Copia e Cola</label>
+            <div id="pixCodeDisplay" class="pix-code-display" onclick="copyPix()">{{ code }}</div>
         </div>
         
         <button id="copyButton" class="copy-button" onclick="copyPix()">
@@ -203,72 +170,48 @@
         </button>
         
         <div class="footer">
-            <span>🔒 Pagamento seguro via PIX • NexTrustX</span>
-            <button id="shareButton" class="footer-share-link" onclick="sharePaymentLink()">
-                Partilhar <span class="arrow">→</span>
-            </button>
+            <div class="secure-tag">
+                <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"/></svg>
+                Checkout Seguro • NexTrustX
+            </div>
+            <button class="btn-share" onclick="shareLink()">Partilhar</button>
         </div>
     </div>
 
     <script>
-        // O PAYMENT_LINK será preenchido automaticamente com a URL atual (dominio.com/valor)
-        const PAYMENT_LINK = window.location.href;
-        
-        function formatCurrencyPTBR(rawAmount) {
-            rawAmount = parseFloat(String(rawAmount).replace(',', '.'));
-            if (isNaN(rawAmount)) return 'R$ -';
-            return 'R$ ' + rawAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const valorDisplay = document.getElementById('valorDisplay');
-            if (valorDisplay && valorDisplay.innerText.includes('{{ valor }}')) {
-                // Se o servidor não substituiu (teste local), mantém o que está
-            } else if (valorDisplay) {
-                const valorLimpo = valorDisplay.innerText.replace('R$ ', '');
-                valorDisplay.innerText = formatCurrencyPTBR(valorLimpo);
-            }
-        });
-
         function copyPix() {
-            const codeDisplay = document.getElementById("pixCodeDisplay");
-            const copyButton = document.getElementById("copyButton");
-            const textToCopy = codeDisplay.textContent || codeDisplay.innerText;
-
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                const originalText = copyButton.innerText;
-                copyButton.innerText = "Copiado com sucesso! ✅";
-                copyButton.classList.add("copied");
-
+            const text = document.getElementById("pixCodeDisplay").innerText;
+            const btn = document.getElementById("copyButton");
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = btn.innerText;
+                btn.innerText = "Copiado! ✅";
+                btn.classList.add("copied");
                 setTimeout(() => {
-                    copyButton.innerText = originalText;
-                    copyButton.classList.remove("copied");
+                    btn.innerText = originalText;
+                    btn.classList.remove("copied");
                 }, 2000);
             });
         }
-        
-        async function sharePaymentLink() {
-            const shareButton = document.getElementById("shareButton");
-            
+
+        function shareLink() {
             if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: 'Pagamento PIX',
-                        text: `Olá! Segue o link para pagamento via PIX:`,
-                        url: PAYMENT_LINK,
-                    });
-                } catch (err) {}
+                navigator.share({ title: 'Pagamento PIX', url: window.location.href });
             } else {
-                navigator.clipboard.writeText(PAYMENT_LINK);
-                const originalText = shareButton.innerText;
-                shareButton.innerText = "Link Copiado! 📋";
-                shareButton.classList.add("copied");
-                setTimeout(() => {
-                    shareButton.innerText = originalText;
-                    shareButton.classList.remove("copied");
-                }, 3000);
+                navigator.clipboard.writeText(window.location.href);
+                alert("Link copiado!");
             }
         }
+
+        // Simulação de Timer Simples
+        let timeLeft = 1800; 
+        setInterval(() => {
+            if(timeLeft <= 0) return;
+            timeLeft--;
+            let mins = Math.floor(timeLeft / 60);
+            let secs = timeLeft % 60;
+            document.querySelector('.timer').innerText = `⚡ Expira em ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }, 1000);
     </script>
 </body>
 </html>

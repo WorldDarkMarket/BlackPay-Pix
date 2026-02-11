@@ -1,13 +1,12 @@
-const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
+import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
 
-// CONFIGURAÇÃO DOS CLIENTES (Adicione novos domínios aqui)
+// CONFIGURAÇÃO DOS CLIENTES
 const CLIENTS = {
-    // Substituímos o pix.codex.art por este:
     'checkout.nextrustx.com': {
         name: 'NexTrustX',
-        ci: process.env.CI_NEXTRUSTX, // Lembre-se de mudar o nome da variável na Vercel também
+        ci: process.env.CI_NEXTRUSTX,
         cs: process.env.CS_NEXTRUSTX,
         logo: 'https://res.cloudinary.com/dhwqfkhzm/image/upload/v1762957978/Captura_de_tela_2025-11-11_141146_bvmsf6.png',
         color: '#00875F'
@@ -23,27 +22,25 @@ const CLIENTS = {
 
 export default async function handler(req, res) {
     const host = req.headers.host;
-    const client = CLIENTS[host] || CLIENTS['pix.codex.art']; // Default caso o domínio não esteja na lista
+    // Fallback para o seu novo domínio principal
+    const client = CLIENTS[host] || CLIENTS['checkout.nextrustx.com']; 
 
-    // ROTA PARA WEBHOOK (Onde a MisticPay avisa que foi pago)
     if (req.method === 'POST') {
         const payload = req.body;
         if (payload.status === 'COMPLETO') {
-            console.log(`✅ PAGAMENTO CONFIRMADO: Domínio ${host} - ID ${payload.transactionId}`);
+            console.log(`✅ PAGO: ${host} - ID ${payload.transactionId}`);
         }
         return res.status(200).json({ status: 'ok' });
     }
 
-    // ROTA PARA GERAR PÁGINA (GET)
     const valorRaw = req.url.replace('/', '');
     const amount = parseFloat(valorRaw.replace(',', '.'));
 
     if (isNaN(amount) || amount <= 0) {
-        return res.status(400).send("Por favor, insira um valor válido na URL. Exemplo: seu-dominio.com/29.90");
+        return res.status(400).send("Insira um valor na URL. Ex: checkout.nextrustx.com/29.90");
     }
 
     try {
-        // Chamada API MisticPay
         const response = await axios.post('https://api.misticpay.com/api/transactions/create', {
             amount: amount,
             payerName: "Cliente " + client.name,
@@ -60,20 +57,26 @@ export default async function handler(req, res) {
         });
 
         const data = response.data.data;
-
-        // Carregar seu HTML
         const htmlPath = path.join(process.cwd(), 'public', 'index.html');
         let html = fs.readFileSync(htmlPath, 'utf8');
 
-        // Substituições Dinâmicas (Branding e Dados do Pix)
+        // --- CORREÇÕES DE SUBSTITUIÇÃO ---
+        
+        // 1. Valor
         html = html.replace(/{{ valor }}/g, amount.toFixed(2));
+        
+        // 2. Pix Copia e Cola
         html = html.replace('{{ code }}', data.copyPaste);
-        html = html.replace('/static/qrcode_{{ valor }}.png', data.qrCodeBase64);
+        
+        // 3. QR CODE (Esta é a correção principal: removemos o src falso e injetamos o Base64)
+        html = html.replace('src="/static/qrcode_{{ valor }}.png"', `src="${data.qrCodeBase64}"`);
+        
+        // 4. Branding
         html = html.replace('NexTrustX', client.name);
         html = html.replace(/#00875F/g, client.color);
         html = html.replace('https://res.cloudinary.com/dhwqfkhzm/image/upload/v1762957978/Captura_de_tela_2025-11-11_141146_bvmsf6.png', client.logo);
         
-        // Ajuste para o botão Partilhar funcionar em qualquer domínio
+        // 5. Link de Partilha
         html = html.replace("const PAYMENT_LINK = 'https://suaempresa.com.br/pagamento/{{ valor }}/{{ code }}';", `const PAYMENT_LINK = window.location.href;`);
 
         res.setHeader('Content-Type', 'text/html');

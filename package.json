@@ -1,6 +1,7 @@
 {
   "name": "gerador-pix-multi-tenant",
   "version": "1.0.0",
+  "type": "module",
   "main": "api/index.js",
   "dependencies": {
     "axios": "^1.6.0"
