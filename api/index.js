@@ -21,13 +21,9 @@ const CLIENTS = {
 
 export default async function handler(req, res) {
     const host = req.headers.host;
-    const client = CLIENTS[host] || CLIENTS['checkout.nextrustx.com']; 
+    const client = CLIENTS[host] || CLIENTS['checkout.nextrustx.com'];
 
     if (req.method === 'POST') {
-        const payload = req.body;
-        if (payload.status === 'COMPLETO') {
-            console.log(`✅ PAGO: ${host} - ID ${payload.transactionId}`);
-        }
         return res.status(200).json({ status: 'ok' });
     }
 
@@ -35,7 +31,7 @@ export default async function handler(req, res) {
     const amount = parseFloat(valorRaw.replace(',', '.'));
 
     if (isNaN(amount) || amount <= 0) {
-        return res.status(400).send("Insira um valor na URL. Ex: checkout.nextrustx.com/29.90");
+        return res.status(400).send("Valor inválido na URL.");
     }
 
     try {
@@ -45,36 +41,26 @@ export default async function handler(req, res) {
             payerDocument: "00000000000",
             transactionId: `TX-${Date.now()}`,
             description: `Pagamento via ${client.name}`,
-            projectWebhook: `https://${host}/` 
+            projectWebhook: `https://${host}/`
         }, {
-            headers: {
-                'ci': client.ci,
-                'cs': client.cs,
-                'Content-Type': 'application/json'
-            }
+            headers: { 'ci': client.ci, 'cs': client.cs, 'Content-Type': 'application/json' }
         });
 
         const data = response.data.data;
         const htmlPath = path.join(process.cwd(), 'public', 'index.html');
         let html = fs.readFileSync(htmlPath, 'utf8');
 
-        // --- SUBSTITUIÇÕES À PROVA DE ERROS ---
-        
-        // 1. Valor e Pix
+        // SUBSTITUIÇÕES BLINDADAS
         html = html.replace(/{{ valor }}/g, amount.toFixed(2));
-        html = html.replace('{{ code }}', data.copyPaste);
+        html = html.replace(/{{ code }}/g, data.copyPaste);
+        html = html.replace(/{{ clientName }}/g, client.name);
         
-        // 2. QR Code (Garante o prefixo data:image se não existir)
-        const qrCodeBase64 = data.qrCodeBase64.startsWith('data:') 
-            ? data.qrCodeBase64 
-            : `data:image/png;base64,${data.qrCodeBase64}`;
-        html = html.replace('ID_DO_QRCODE', qrCodeBase64);
-        
-        // 3. Branding
+        // Injeção de Imagens via Marcadores Únicos
+        const qrCodeImg = data.qrCodeBase64.startsWith('data:') ? data.qrCodeBase64 : `data:image/png;base64,${data.qrCodeBase64}`;
+        html = html.replace('ID_DO_QRCODE', qrCodeImg);
         html = html.replace('ID_DA_LOGO', client.logo);
-        html = html.replace(/NexTrustX/g, client.name);
-        
-        // 4. Cores (Variável CSS e fallback)
+
+        // Injeção de Cores
         html = html.replace('--primary-color: #00875F;', `--primary-color: ${client.color};`);
         html = html.replace(/#00875F/g, client.color);
 
@@ -82,7 +68,7 @@ export default async function handler(req, res) {
         return res.status(200).send(html);
 
     } catch (error) {
-        console.error("Erro na MisticPay:", error.response?.data || error.message);
-        return res.status(500).send("Erro ao gerar Pix. Verifique as credenciais na Vercel.");
+        console.error("ERRO CRÍTICO:", error.response?.data || error.message);
+        return res.status(500).send("Erro técnico ao gerar o Pix. Verifique os logs.");
     }
 }

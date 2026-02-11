@@ -1,87 +1,69 @@
-import axios from 'axios';
-import fs from 'fs';
-import path from 'path';
-
-const CLIENTS = {
-    'checkout.nextrustx.com': {
-        name: 'NexTrustX',
-        ci: process.env.CI_NEXTRUSTX,
-        cs: process.env.CS_NEXTRUSTX,
-        logo: 'https://res.cloudinary.com/dhwqfkhzm/image/upload/v1762957978/Captura_de_tela_2025-11-11_141146_bvmsf6.png',
-        color: '#00875F'
-    },
-    'pagamento.cacaushow.fun': {
-        name: 'CacauShow',
-        ci: process.env.CI_CACAO,
-        cs: process.env.CS_CACAO,
-        logo: 'https://files.catbox.moe/8tsf1t.jpg',
-        color: '#4b2d1f'
-    }
-};
-
-export default async function handler(req, res) {
-    const host = req.headers.host;
-    const client = CLIENTS[host] || CLIENTS['checkout.nextrustx.com']; 
-
-    if (req.method === 'POST') {
-        const payload = req.body;
-        if (payload.status === 'COMPLETO') {
-            console.log(`✅ PAGO: ${host} - ID ${payload.transactionId}`);
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamento Seguro - PIX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary-color: #00875F; --bg-color: #eef2ff; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .pix-container { background: #fff; padding: 40px 30px; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.08); text-align: center; width: 100%; max-width: 450px; }
+        .pix-logo { max-width: 120px; max-height: 50px; margin-bottom: 30px; object-fit: contain; }
+        h1 { font-size: 22px; color: #1f2937; margin-bottom: 8px; font-weight: 700; }
+        .timer { font-size: 13px; color: #ef4444; background: #fee2e2; display: inline-block; padding: 4px 12px; border-radius: 20px; margin-bottom: 20px; font-weight: 600; }
+        .price { font-size: 36px; font-weight: 800; color: var(--primary-color); margin-bottom: 25px; }
+        .qrcode-wrapper { background: #f8fafc; padding: 15px; border-radius: 15px; display: inline-block; border: 2px solid #f1f5f9; margin-bottom: 25px; }
+        .qrcode { width: 220px; height: 220px; display: block; }
+        .code-block-wrapper { text-align: left; margin-bottom: 20px; }
+        .info-label { font-size: 13px; color: #64748b; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
+        .pix-code-display { width: 100%; padding: 15px; font-size: 13px; border-radius: 12px; border: 2px dashed #cbd5e1; background-color: #f8fafc; word-break: break-all; color: #334155; font-family: monospace; cursor: pointer; }
+        .copy-button { width: 100%; padding: 16px; font-size: 16px; border: none; border-radius: 12px; background-color: var(--primary-color); color: #ffffff; cursor: pointer; font-weight: 700; transition: 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .copy-button.copied { background-color: #10b981 !important; }
+        .footer { margin-top: 25px; padding-top: 20px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="pix-container">
+        <img class="pix-logo" src="ID_DA_LOGO" alt="Logo">
+        <h1>PAGAMENTO</h1>
+        <div class="timer">Aguardando...</div>
+        <div class="price">R$ {{ valor }}</div>
+        <div class="qrcode-wrapper">
+            <img class="qrcode" src="ID_DO_QRCODE" alt="QR Code">
+        </div>
+        <div class="code-block-wrapper">
+            <label class="info-label">Copia e Cola</label>
+            <div id="pixCodeDisplay" class="pix-code-display" onclick="copyPix()">{{ code }}</div>
+        </div>
+        <button id="copyButton" class="copy-button" onclick="copyPix()">COPIAR CÓDIGO PIX</button>
+        <div class="footer">
+            <span>🔒 Seguro • {{ clientName }}</span>
+            <span onclick="shareLink()" style="cursor:pointer">COMPARTILHAR</span>
+        </div>
+    </div>
+    <script>
+        function copyPix() {
+            const text = document.getElementById("pixCodeDisplay").innerText;
+            const btn = document.getElementById("copyButton");
+            navigator.clipboard.writeText(text).then(() => {
+                btn.innerText = "Copiado! ✅";
+                btn.classList.add("copied");
+                setTimeout(() => { btn.innerText = "COPIAR CÓDIGO PIX"; btn.classList.remove("copied"); }, 2000);
+            });
         }
-        return res.status(200).json({ status: 'ok' });
-    }
-
-    const valorRaw = req.url.split('?')[0].replace('/', '');
-    const amount = parseFloat(valorRaw.replace(',', '.'));
-
-    if (isNaN(amount) || amount <= 0) {
-        return res.status(400).send("Insira um valor na URL. Ex: checkout.nextrustx.com/29.90");
-    }
-
-    try {
-        const response = await axios.post('https://api.misticpay.com/api/transactions/create', {
-            amount: amount,
-            payerName: "Cliente " + client.name,
-            payerDocument: "00000000000",
-            transactionId: `TX-${Date.now()}`,
-            description: `Pagamento via ${client.name}`,
-            projectWebhook: `https://${host}/` 
-        }, {
-            headers: {
-                'ci': client.ci,
-                'cs': client.cs,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const data = response.data.data;
-        const htmlPath = path.join(process.cwd(), 'public', 'index.html');
-        let html = fs.readFileSync(htmlPath, 'utf8');
-
-        // --- SUBSTITUIÇÕES DE ALTA PRECISÃO ---
-        
-        // 1. Injeta o Valor e o Código Copia e Cola
-        html = html.replace(/{{ valor }}/g, amount.toFixed(2));
-        html = html.replace(/{{ code }}/g, data.copyPaste);
-        html = html.replace(/{{ clientName }}/g, client.name);
-        
-        // 2. CORREÇÃO DO QR CODE: Localiza o src exato do seu HTML
-        // Verificamos se a API já manda com o prefixo data:image, se não, adicionamos.
-        const qrImg = data.qrCodeBase64.startsWith('data:') ? data.qrCodeBase64 : `data:image/png;base64,${data.qrCodeBase64}`;
-        html = html.replace('src="/static/qrcode_{{ valor }}.png"', `src="${qrImg}"`);
-
-        // 3. CORREÇÃO DA LOGO: Localiza a URL da logo padrão do seu HTML
-        html = html.replace('src="https://res.cloudinary.com/dhwqfkhzm/image/upload/v1762957978/Captura_de_tela_2025-11-11_141146_bvmsf6.png"', `src="${client.logo}"`);
-
-        // 4. Branding de Cores (CSS Variables)
-        html = html.replace('--primary-color: #00875F;', `--primary-color: ${client.color};`);
-        html = html.replace(/#00875F/g, client.color);
-
-        res.setHeader('Content-Type', 'text/html');
-        return res.status(200).send(html);
-
-    } catch (error) {
-        console.error("Erro MisticPay:", error.response?.data || error.message);
-        return res.status(500).send("Erro ao processar Pix. Verifique suas chaves na Vercel.");
-    }
-}
+        function shareLink() {
+            if (navigator.share) navigator.share({ title: 'Pix', url: window.location.href });
+            else { navigator.clipboard.writeText(window.location.href); alert("Link copiado!"); }
+        }
+        let timeLeft = 1800;
+        setInterval(() => {
+            if(timeLeft <= 0) return;
+            timeLeft--;
+            let mins = Math.floor(timeLeft/60), secs = timeLeft%60;
+            document.querySelector('.timer').innerText = `⚡ Expira em ${mins}:${secs<10?'0':''}${secs}`;
+        }, 1000);
+    </script>
+</body>
+</html>
